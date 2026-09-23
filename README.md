@@ -1,6 +1,8 @@
 # MIPS32-pipelined-core
 
-This repository contains the baseline behavioral implementation of a 5-stage MIPS32 pipeline developed in the NPTEL course "Hardware Modeling Using Verilog". The current phase is a monolithic pipeline model with a dual-clock structure, simulation delays (`#2`), and behavioral register/memory arrays, intentionally kept faithful to the original educational reference.
+## Repository Description
+
+This repository documents the Phase 1 behavioral baseline of a 5-stage MIPS32 pipeline implemented as part of the NPTEL course "Hardware Modeling Using Verilog". The current design is intentionally kept monolithic and uses a dual-clock scheme with behavioral timing delays (`#2`) to match the original teaching model. It is intended as a reference implementation for studying the pipeline flow, register/memory behavior, and basic control logic before the refactor to a cleaner, single-clock architecture.
 
 ## Module Overview
 
@@ -46,51 +48,36 @@ The pipeline is driven by two clock phases, `clk1` and `clk2`, as defined in the
 | `BRANCH` | `3'b100` | Branch operation |
 | `HALT` | `3'b101` | Pipeline halt state |
 
-## Pipeline Diagram (Mermaid)
+## Pipeline Flow
+
+The baseline pipeline is organized in the following execution flow:
 
 ```mermaid
 flowchart LR
-  subgraph IF[Fetch Stage]
-    PC[Program Counter]
-    I_MEM[Instruction Memory]
-    IF_REG[IF_ID Register]
-  end
+  IF[Fetch / IF]
+  ID[Decode / ID]
+  EX[Execute / EX]
+  MEM[Memory / MEM]
+  WB[Writeback / WB]
 
-  subgraph ID[Decode Stage]
-    RF[Register File]
-    CTRL[Instruction Decode]
-    ID_REG[ID_EX Register]
-  end
+  IF_ID[IF_ID Register<br/>PC + IR]
+  ID_EX[ID_EX Register<br/>A, B, Imm, IR]
+  EX_MEM[EX_MEM Register<br/>ALUout, B, IR]
+  MEM_WB[MEM_WB Register<br/>Result / LMD]
 
-  subgraph EX[Execute Stage]
-    ALU[ALU / Branch Logic]
-    EX_REG[EX_MEM Register]
-  end
+  IF --> IF_ID
+  IF_ID --> ID
+  ID --> ID_EX
+  ID_EX --> EX
+  EX --> EX_MEM
+  EX_MEM --> MEM
+  MEM --> MEM_WB
+  MEM_WB --> WB
 
-  subgraph MEM[Memory Stage]
-    DATA[Data Memory]
-    MEM_REG[MEM_WB Register]
-  end
-
-  subgraph WB[Writeback Stage]
-    WB[Register Writeback]
-  end
-
-  PC -->|Mem[PC]| I_MEM
-  I_MEM --> IF_REG
-  IF_REG --> RF
-  RF --> CTRL
-  CTRL --> ID_REG
-  ID_REG --> ALU
-  ALU --> EX_REG
-  EX_REG --> DATA
-  DATA --> MEM_REG
-  MEM_REG --> WB
-
-  EX_REG -->|branch decision| PC
-  DATA -->|load result| WB
-  RF -->|write address/data| WB
+  EX -->|branch decision| IF
 ```
+
+This flow reflects the original dual-clock behavioral design, where interstage registers carry the instruction and execution context between pipeline stages.
 
 ## Refactoring Roadmap (Phase 2)
 
